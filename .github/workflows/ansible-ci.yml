@@ -1,9 +1,15 @@
 name: CI Ansible Lab
-on: [push, pull_request]
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
 
 jobs:
   linting:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+
     steps:
       - uses: actions/checkout@v4
 
@@ -11,19 +17,36 @@ jobs:
         run: pip install ansible-lint
 
       - name: Run Ansible Lint
-        run: ansible-lint --version
+        run: ansible-lint . || true
 
   infrastructure:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+
     steps:
       - uses: actions/checkout@v4
 
-      - name: Start Docker Compose
+      - name: Detect Docker changes
+        id: changes
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            docker:
+              - 'docker/Dockerfile'
+              - 'docker/docker-compose.yml'
+
+      - name: Start Docker Compose with Build
+        if: steps.changes.outputs.docker == 'true'
         working-directory: docker
         run: docker compose up -d --build
 
+      - name: Start Docker Compose without Build
+        if: steps.changes.outputs.docker != 'true'
+        working-directory: docker
+        run: docker compose up -d
+
       - name: Wait for LocalStack
-        run: sleep 10
+        run: sleep 15
 
       - name: Check LocalStack Health
         run: curl -L http://localhost:4566/_localstack/health
@@ -37,3 +60,8 @@ jobs:
       - name: Show LocalStack Logs on Failure
         if: failure()
         run: docker logs localstack
+
+      - name: Shutdown containers
+        if: always()
+        working-directory: docker
+        run: docker compose down -v
