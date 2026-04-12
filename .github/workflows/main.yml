@@ -1,0 +1,39 @@
+name: CI Ansible Lab
+on: [push, pull_request]
+
+jobs:
+  linting:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install ansible-lint
+        run: pip install ansible-lint
+
+      - name: Run Ansible Lint
+        run: ansible-lint --version
+
+  infrastructure:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Start Docker Compose
+        working-directory: docker
+        run: docker compose up -d --build
+
+      - name: Wait for LocalStack
+        run: sleep 10
+
+      - name: Check LocalStack Health
+        run: curl -L http://localhost:4566/_localstack/health
+
+      - name: Show Running Containers
+        run: docker ps
+
+      - name: Verify environment variables
+        run: docker exec localstack env | grep AWS_DEFAULT_REGION
+
+      - name: Show LocalStack Logs on Failure
+        if: failure()
+        run: docker logs localstack
