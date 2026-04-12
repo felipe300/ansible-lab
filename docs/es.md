@@ -23,12 +23,18 @@ Vamos a crear un laboratorio donde:
 - Ansible:
   - Crea infraestructura AWS fake en LocalStack (VPC, subnet, bucket S3)
   - Configura servidores Docker (nginx)
+- GitHub Actions valida:
+  - Linting del proyecto
+  - Levantamiento automático de infraestructura
+  - Health checks de LocalStack
+  - Validación CI continua en cada `push`/`pull` request
 
 ## Tecnologías Utilizadas
 
 | Herramienta    | Propósito                          |
 | -------------- | ---------------------------------- |
 | Ansible        | Automatización IaC                 |
+| Docker         | Virtualización Ligera              |
 | Docker Compose | Orquestación de contenedores       |
 | LocalStack     | Simulación AWS local               |
 | Git / GitHub   | Control de versiones y Repositorio |
@@ -136,6 +142,17 @@ ansible-playbook -i ansible/inventory/hosts.ini ansible/playbooks/provision-aws.
 # Configurar servidores locales
 ansible-playbook -i ansible/inventory/hosts.ini ansible/playbooks/configure-servers.yml
 ```
+
+## GitHub Actions: Cómo probar CI
+
+El pipeline se ejecuta automáticamente en:
+
+- `push`
+- `pull_request`
+
+**Para disparar el CI**:
+
+Realiza cambios en tu proyecto, depués realiza un `push` a GitHub.
 
 ## Autor
 
