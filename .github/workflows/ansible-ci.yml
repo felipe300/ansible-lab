@@ -13,7 +13,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Run Ansible Lint
-        uses: ansible/ansible-lint-action@main
+        uses: ansible/ansible-lint@main
 
   infrastructure:
     runs-on: ubuntu-latest
