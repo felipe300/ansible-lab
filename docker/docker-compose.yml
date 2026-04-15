@@ -1,3 +1,16 @@
+x-server-template: &server-template
+  build:
+    context: .
+  image: ansible-target:latest
+  environment:
+    - AWS_DEFAULT_REGION=${AWS_REGION}
+    - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+    - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+  networks:
+    - ansible_lab
+  expose:
+    - "22"
+
 services:
   localstack:
     image: localstack/localstack:3.0
@@ -10,25 +23,35 @@ services:
       - AWS_DEFAULT_REGION=${AWS_REGION}
       - DOCKER_HOST=unix:///var/run/docker.sock
     volumes:
-      - "/var/run/docker.sock:/var/run/docker.sock"
-      - "./init-aws:/etc/localstack/init/ready.d"
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./init-aws:/etc/localstack/init/ready.d
+    networks:
+      - ansible_lab
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4566/_localstack/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-  server1:
-    build: .
-    container_name: server1
-    ports:
-      - "${SSH_PORT_1}:22"
-    environment:
-      - AWS_DEFAULT_REGION=${AWS_REGION}
-      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+  control:
+    build:
+      context: .
+      dockerfile: Dockerfile.control
+    container_name: ansible-control
+    networks:
+      - ansible_lab
+    depends_on:
+      - server_1
+      - server_2
 
-  server2:
-    build: .
-    container_name: server2
-    ports:
-      - "${SSH_PORT_2}:22"
-    environment:
-      - AWS_DEFAULT_REGION=${AWS_REGION}
-      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+  server_1:
+    <<: *server-template
+    container_name: server_1
+
+  server_2:
+    <<: *server-template
+    container_name: server_2
+
+networks:
+  ansible_lab:
+    driver: bridge

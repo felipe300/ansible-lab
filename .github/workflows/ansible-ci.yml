@@ -46,7 +46,7 @@ jobs:
         run: docker compose up -d
 
       - name: Wait for LocalStack
-        run: sleep 15
+        run: sleep 5
 
       - name: Check LocalStack Health
         run: curl -L http://localhost:4566/_localstack/health
