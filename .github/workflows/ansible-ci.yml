@@ -12,12 +12,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-
-      - name: Install ansible-lint
-        run: pip install ansible-lint
-
       - name: Run Ansible Lint
-        run: ansible-lint . || true
+        uses: ansible/ansible-lint-action@main
 
   infrastructure:
     runs-on: ubuntu-latest
@@ -29,39 +25,28 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Cache Docker layers
-        uses: actions/cache@v4
+      - name: Build and load Control Image
+        uses: docker/build-push-action@v6
         with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ github.ref_name }}
-          restore-keys: |
-            ${{ runner.os }}-buildx-
+          context: docker
+          file: docker/Dockerfile.control
+          load: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-      - name: Build Docker images
+      - name: Start Infrastructure
         working-directory: docker
-        run: docker compose build
-
-      - name: Start Docker Compose
-        working-directory: docker
-        run: docker compose up -d
-
-      - name: Wait for LocalStack
-        run: sleep 5
+        run: docker compose up -d --wait
 
       - name: Check LocalStack Health
         run: curl -L http://localhost:4566/_localstack/health
 
-      - name: Show Running Containers
-        run: docker ps
+      - name: Environment Audit
+        run: |
+          docker ps
+          docker exec localstack env | grep AWS_DEFAULT_REGION
 
-      - name: Verify environment variables
-        run: docker exec localstack env | grep AWS_DEFAULT_REGION
-
-      - name: Show LocalStack Logs on Failure
-        if: failure()
-        run: docker logs localstack
-
-      - name: Shutdown containers
+      - name: Shutdown
         if: always()
         working-directory: docker
         run: docker compose down -v

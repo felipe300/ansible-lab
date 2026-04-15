@@ -1,4 +1,4 @@
-FROM ubuntu:22.04
+FROM ubuntu:24.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 WORKDIR /lab
@@ -6,6 +6,8 @@ WORKDIR /lab
 RUN apt-get update && apt-get install -y --no-install-recommends \
     openssh-server \
     nginx \
+    sudo \
+    python3 \
  && rm -rf /var/lib/apt/lists/*
 
 RUN mkdir /var/run/sshd \
