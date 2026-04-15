@@ -1,0 +1,21 @@
+FROM ansible-base:latest
+
+ENV DEBIAN_FRONTEND=noninteractive
+WORKDIR /lab
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    openssh-server \
+    nginx \
+ && rm -rf /var/lib/apt/lists/*
+
+RUN mkdir /var/run/sshd \
+ && useradd -m -s /bin/bash ansible \
+ && echo "ansible:ansible" | chpasswd \
+ && echo "ansible ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+
+RUN ln -sf /dev/stdout /var/log/nginx/access.log \
+ && ln -sf /dev/stderr /var/log/nginx/error.log
+
+EXPOSE 22 80
+
+CMD ["/usr/sbin/sshd", "-D"]

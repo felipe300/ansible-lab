@@ -1,6 +1,4 @@
 x-server-template: &server-template
-  build:
-    context: .
   image: ansible-target:latest
   environment:
     - AWS_DEFAULT_REGION=${AWS_REGION}
@@ -38,6 +36,10 @@ services:
       context: .
       dockerfile: Dockerfile.control
     container_name: ansible-control
+    environment:
+      - AWS_DEFAULT_REGION=${AWS_REGION}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
     networks:
       - ansible_lab
     depends_on:
@@ -47,10 +49,16 @@ services:
   server_1:
     <<: *server-template
     container_name: server_1
+    build:
+      context: .
+      dockerfile: Dockerfile.target
 
   server_2:
     <<: *server-template
     container_name: server_2
+    build:
+      context: .
+      dockerfile: Dockerfile.target
 
 networks:
   ansible_lab:

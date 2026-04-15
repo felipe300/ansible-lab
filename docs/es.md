@@ -49,6 +49,8 @@ ansible-lab/
 │       └── ansible-ci.yml
 ├── docker/
 │   ├── Dockerfile
+│   ├── Dockerfile.control
+│   ├── Dockerfile.target
 │   └── docker-compose.yml
 ├── ansible/
 │   ├── inventory/
@@ -116,7 +118,13 @@ La version `localstack:latest` en el archivo `docker-compose` utilizará la vers
 
 ```bash
 cd docker
+docker build -t ansible-base:latest .
+docker compose up -d --build
+# Then
 docker compose up -d
+
+# End terminate
+docker compose down
 ```
 
 **Verificar contenedor**
