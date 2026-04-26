@@ -48,6 +48,9 @@ services:
     depends_on:
       - server_1
       - server_2
+    volumes:
+      - ../:/ansible
+    working_dir: /ansible
 
   server_1:
     <<: *server-template

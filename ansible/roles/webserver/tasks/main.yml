@@ -1,0 +1,19 @@
+---
+- name: Check if Nginx is installed
+  apt:
+    name: nginx
+    state: present
+    update_cache: yes
+
+- name: Config index.html file
+  template:
+    src: index.html.j2
+    dest: /var/www/html/index.html
+    owner: www-data
+    group: www-data
+    mode: "0644"
+
+- name: Initialize Nginx service
+  service:
+    name: nginx
+    state: started

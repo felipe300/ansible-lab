@@ -1,0 +1,26 @@
+- name: Config DevOps Lab
+  hosts: nodes
+  become: true
+
+  roles:
+    - webserver
+
+  vars:
+    aws_access_key: "{{ lookup('env', 'AWS_ACCESS_KEY_ID') | default('test', true) }}"
+    aws_secret_key: "{{ lookup('env', 'AWS_SECRET_ACCESS_KEY') | default('test', true) }}"
+
+  tasks:
+    - name: Check connection with LocalStack (S3)
+      shell: |
+        aws --endpoint-url={{ aws_endpoint_url }} s3 ls
+      environment:
+        AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
+        AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
+        AWS_DEFAULT_REGION: "{{ aws_region }}"
+      register: aws_check
+      changed_when: false
+      failed_when: aws_check.rc != 0
+
+    - name: Show LocalStack Result
+      debug:
+        msg: "Conexión exitosa a LocalStack en {{ aws_endpoint_url }}"
