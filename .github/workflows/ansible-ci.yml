@@ -58,7 +58,11 @@ jobs:
         run: |
           docker ps
           echo "Verificando usuarios creados en CI:"
-          docker exec ansible-control aws --endpoint-url=http://ministack:4566 iam list-users
+          docker exec \
+            -e AWS_ACCESS_KEY_ID=test \
+            -e AWS_SECRET_ACCESS_KEY=test \
+            -e AWS_DEFAULT_REGION=us-east-1 \
+            ansible-control aws --endpoint-url=http://ministack:4566 iam list-users
 
       - name: Shutdown
         if: always()
