@@ -1,19 +1,17 @@
 ---
-- name: Check if Nginx is installed
-  apt:
+- name: Install Nginx
+  ansible.builtin.apt:
     name: nginx
     state: present
-    update_cache: yes
 
-- name: Config index.html file
-  template:
+- name: Deploy index.html
+  ansible.builtin.template:
     src: index.html.j2
     dest: /var/www/html/index.html
-    owner: www-data
-    group: www-data
     mode: "0644"
 
-- name: Initialize Nginx service
-  service:
+- name: Init Nginx
+  ansible.builtin.service:
     name: nginx
     state: started
+    enabled: true

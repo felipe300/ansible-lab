@@ -3,7 +3,7 @@
   become: true
 
   roles:
-    - webserver
+    - ../roles/webserver/
 
   vars:
     aws_access_key: "{{ lookup('env', 'AWS_ACCESS_KEY_ID') | default('test', true) }}"
