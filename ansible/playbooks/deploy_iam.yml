@@ -10,15 +10,21 @@
   vars:
     desired_groups: ["admin-group", "dev-group"]
     desired_users:
-      - { name: "ana-admin", group: "admin-group" }
-      - { name: "pedro-dev", group: "dev-group" }
-      - { name: "marta-dev", group: "dev-group" }
+      - { name: "gon-admin", group: "admin-group" }
+      - { name: "killua-dev", group: "dev-group" }
+      - { name: "leorio-dev", group: "dev-group" }
+    aws_id: "{{ lookup('ansible.builtin.env', 'AWS_ACCESS_KEY_ID') | default('test', true) }}"
+    aws_key: "{{ lookup('ansible.builtin.env', 'AWS_SECRET_ACCESS_KEY') | default('test', true) }}"
 
   tasks:
     - name: Create groups on IAM
       ansible.builtin.command: >
         aws --endpoint-url={{ lookup('ansible.builtin.env', 'AWS_ENDPOINT_URL') | default(aws_endpoint_url, true) }}
         iam create-group --group-name {{ item }}
+      environment:
+        AWS_ACCESS_KEY_ID: "{{ aws_id }}"
+        AWS_SECRET_ACCESS_KEY: "{{ aws_key }}"
+        AWS_DEFAULT_REGION: "{{ aws_region }}"
       loop: "{{ desired_groups }}"
       register: group_output
       changed_when: "'EntityAlreadyExists' not in group_output.stderr and group_output.rc == 0"
@@ -26,7 +32,12 @@
 
     - name: Create users on IAM
       ansible.builtin.command: >
-        aws --endpoint-url={{ aws_endpoint_url }} iam create-user --user-name {{ item.name }}
+        aws --endpoint-url={{ lookup('ansible.builtin.env', 'AWS_ENDPOINT_URL') | default(aws_endpoint_url, true) }}
+        iam create-user --user-name {{ item.name }}
+      environment:
+        AWS_ACCESS_KEY_ID: "{{ aws_id }}"
+        AWS_SECRET_ACCESS_KEY: "{{ aws_key }}"
+        AWS_DEFAULT_REGION: "{{ aws_region }}"
       loop: "{{ desired_users }}"
       register: user_output
       changed_when: "'EntityAlreadyExists' not in user_output.stderr and user_output.rc == 0"
@@ -34,8 +45,12 @@
 
     - name: Asign users to groups
       ansible.builtin.command: >
-        aws --endpoint-url={{ aws_endpoint_url }} iam add-user-to-group
-        --user-name {{ item.name }} --group-name {{ item.group }}
+        aws --endpoint-url={{ lookup('ansible.builtin.env', 'AWS_ENDPOINT_URL') | default(aws_endpoint_url, true) }}
+        iam add-user-to-group --user-name {{ item.name }} --group-name {{ item.group }}
+      environment:
+        AWS_ACCESS_KEY_ID: "{{ aws_id }}"
+        AWS_SECRET_ACCESS_KEY: "{{ aws_key }}"
+        AWS_DEFAULT_REGION: "{{ aws_region }}"
       loop: "{{ desired_users }}"
       register: assign_output
       changed_when: "'LimitExceeded' not in assign_output.stderr and assign_output.rc == 0"
@@ -45,6 +60,10 @@
       ansible.builtin.command: >
         aws --endpoint-url={{ lookup('ansible.builtin.env', 'AWS_ENDPOINT_URL') | default(aws_endpoint_url, true) }}
         iam create-access-key --user-name {{ item.name }}
+      environment:
+        AWS_ACCESS_KEY_ID: "{{ aws_id }}"
+        AWS_SECRET_ACCESS_KEY: "{{ aws_key }}"
+        AWS_DEFAULT_REGION: "{{ aws_region }}"
       loop: "{{ desired_users }}"
       register: aws_keys
       changed_when: "aws_keys.rc == 0"
