@@ -12,7 +12,7 @@
 
   tasks:
     - name: Check connection with Ministack (S3)
-      shell: |
+      ansible.builtin.shell: |
         aws --endpoint-url={{ aws_endpoint_url }} s3 ls
       environment:
         AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
@@ -23,5 +23,5 @@
       failed_when: aws_check.rc != 0
 
     - name: Show Ministack Result
-      debug:
+      ansible.builtin.debug:
         msg: "Conexión exitosa a Ministack en {{ aws_endpoint_url }}"
