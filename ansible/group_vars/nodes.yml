@@ -1,4 +1,4 @@
-aws_endpoint_url: "http://localstack:4566"
+aws_endpoint_url: "http://ministack:4566"
 aws_region: "{{ lookup('env', 'AWS_REGION') | default('us-east-1', true) }}"
 
 nginx_port: 80

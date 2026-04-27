@@ -8,9 +8,11 @@
   vars:
     aws_access_key: "{{ lookup('env', 'AWS_ACCESS_KEY_ID') | default('test', true) }}"
     aws_secret_key: "{{ lookup('env', 'AWS_SECRET_ACCESS_KEY') | default('test', true) }}"
+    aws_endpoint_url: "{{ lookup('env', 'AWS_ENDPOINT_URL') | default('http://ministack:4566', true) }}"
+    aws_region: "{{ lookup('env', 'AWS_REGION') | default('us-east-1', true) }}"
 
   tasks:
-    - name: Check connection with LocalStack (S3)
+    - name: Check connection with Ministack (S3)
       shell: |
         aws --endpoint-url={{ aws_endpoint_url }} s3 ls
       environment:
@@ -21,6 +23,6 @@
       changed_when: false
       failed_when: aws_check.rc != 0
 
-    - name: Show LocalStack Result
+    - name: Show Ministack Result
       debug:
-        msg: "Conexión exitosa a LocalStack en {{ aws_endpoint_url }}"
+        msg: "Conexión exitosa a Ministack en {{ aws_endpoint_url }}"

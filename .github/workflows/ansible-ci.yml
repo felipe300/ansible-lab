@@ -2,20 +2,21 @@ name: CI Ansible Lab
 
 on:
   push:
+    branches: [main, feat/ministack]
   pull_request:
+    branches: [main]
   workflow_dispatch:
 
 jobs:
   linting:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
-
     steps:
       - uses: actions/checkout@v4
       - name: Run Ansible Lint
         uses: ansible/ansible-lint@main
 
   infrastructure:
+    needs: linting
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -28,23 +29,32 @@ jobs:
       - name: Build and load Control Image
         uses: docker/build-push-action@v6
         with:
-          context: docker
+          context: .
           file: docker/Dockerfile.control
           load: true
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Start Infrastructure
+      - name: Start Infrastructure (Ministack)
         working-directory: docker
-        run: docker compose up -d --wait
+        run: docker compose up -d
 
-      - name: Check LocalStack Health
-        run: curl -L http://localhost:4566/_localstack/health
+      - name: Wait for Ministack Health
+        run: |
+          timeout 60s sh -c 'until curl -s http://localhost:4566 | grep -q "ListAllMyBucketsResult"; do echo "Esperando a Ministack..."; sleep 2; done'
+
+      - name: Run IAM Playbook Test
+        run: |
+          docker exec ansible-control ansible-playbook \
+            -i /ansible/ansible/inventory/hosts.yml \
+            /ansible/ansible/playbooks/deploy_iam.yml
 
       - name: Environment Audit
+        if: always()
         run: |
           docker ps
-          docker exec localstack env | grep AWS_DEFAULT_REGION
+          echo "Verificando usuarios creados en CI:"
+          docker exec ansible-control aws --endpoint-url=http://ministack:4566 iam list-users
 
       - name: Shutdown
         if: always()

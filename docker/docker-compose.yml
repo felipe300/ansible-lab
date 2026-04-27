@@ -12,55 +12,81 @@ x-server-template: &server-template
     - "22"
 
 services:
-  localstack:
-    image: localstack/localstack:3.0
-    container_name: localstack
+  ministack:
+    image: ministackorg/ministack:latest
+    container_name: ministack
     ports:
       - "4566:4566"
     environment:
-      - DEBUG=${LOCALSTACK_DEBUG}
       - SERVICES=s3,iam
       - AWS_DEFAULT_REGION=${AWS_REGION}
-      - DOCKER_HOST=unix:///var/run/docker.sock
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ./init-aws:/etc/localstack/init/ready.d
+      - ./ministack_data:/data
+      - ./init-aws:/init
     networks:
       - ansible_lab
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:4566/_localstack/health"]
+      test:
+        [
+          "CMD",
+          "python3",
+          "-c",
+          "import socket; s = socket.socket(); s.connect(('127.0.0.1', 4566))",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
-
+      start_period: 15s
   control:
     build:
       context: .
       dockerfile: Dockerfile.control
-    image: ansible-control:latest
     container_name: ansible-control
+    environment:
+      - AWS_DEFAULT_REGION=${AWS_REGION}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_ENDPOINT_URL=http://ministack:4566
+    networks:
+      - ansible_lab
+    depends_on:
+      ministack:
+        condition: service_healthy
+      server_1:
+        condition: service_started
+      server_2:
+        condition: service_started
+    volumes:
+      - ../:/ansible
+    working_dir: /ansible
+
+  server_1:
+    build:
+      context: .
+      dockerfile: Dockerfile.target
+    container_name: server_1
     environment:
       - AWS_DEFAULT_REGION=${AWS_REGION}
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
     networks:
       - ansible_lab
-    depends_on:
-      - server_1
-      - server_2
-    volumes:
-      - ../:/ansible
-    working_dir: /ansible
-
-  server_1:
-    <<: *server-template
-    image: ansible-target:latest
-    container_name: server_1
+    expose:
+      - "22"
 
   server_2:
-    <<: *server-template
-    image: ansible-target:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.target
     container_name: server_2
+    environment:
+      - AWS_DEFAULT_REGION=${AWS_REGION}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+    networks:
+      - ansible_lab
+    expose:
+      - "22"
 
 networks:
   ansible_lab:

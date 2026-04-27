@@ -1,0 +1,42 @@
+---
+- name: Config IAM on Ministack
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars_files:
+    - "../group_vars/nodes.yml"
+
+  vars:
+    desired_groups:
+      - "admin-group"
+      - "dev-group"
+    desired_users:
+      - { name: "gon-admin", group: "admin-group" }
+      - { name: "killua-dev", group: "dev-group" }
+      - { name: "leorio-dev", group: "dev-group" }
+
+  tasks:
+    - name: Crear grupos en IAM (vía CLI)
+      command: >
+        aws --endpoint-url={{ aws_endpoint_url }} iam create-group --group-name {{ item }}
+      loop: "{{ desired_groups }}"
+      register: group_output
+      failed_when:
+        - group_output.rc != 0
+        - "'EntityAlreadyExists' not in group_output.stderr"
+
+    - name: Crear usuarios en IAM (vía CLI)
+      command: >
+        aws --endpoint-url={{ aws_endpoint_url }} iam create-user --user-name {{ item.name }}
+      loop: "{{ desired_users }}"
+      register: user_output
+      failed_when:
+        - user_output.rc != 0
+        - "'EntityAlreadyExists' not in user_output.stderr"
+
+    - name: Asignar usuarios a grupos (vía CLI)
+      command: >
+        aws --endpoint-url={{ aws_endpoint_url }} iam add-user-to-group 
+        --user-name {{ item.name }} --group-name {{ item.group }}
+      loop: "{{ desired_users }}"
