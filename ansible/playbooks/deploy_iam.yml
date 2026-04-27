@@ -15,7 +15,7 @@
       - { name: "marta-dev", group: "dev-group" }
 
   tasks:
-    - name: Crear grupos en IAM
+    - name: Create groups on IAM
       ansible.builtin.command: >
         aws --endpoint-url={{ aws_endpoint_url }} iam create-group --group-name {{ item }}
       loop: "{{ desired_groups }}"
@@ -23,7 +23,7 @@
       changed_when: "'EntityAlreadyExists' not in group_output.stderr and group_output.rc == 0"
       failed_when: "group_output.rc != 0 and 'EntityAlreadyExists' not in group_output.stderr"
 
-    - name: Crear usuarios en IAM
+    - name: Create users on IAM
       ansible.builtin.command: >
         aws --endpoint-url={{ aws_endpoint_url }} iam create-user --user-name {{ item.name }}
       loop: "{{ desired_users }}"
@@ -31,11 +31,16 @@
       changed_when: "'EntityAlreadyExists' not in user_output.stderr and user_output.rc == 0"
       failed_when: "user_output.rc != 0 and 'EntityAlreadyExists' not in user_output.stderr"
 
-    - name: Asignar usuarios a grupos
+    - name: Asign users to groups
       ansible.builtin.command: >
-        aws --endpoint-url={{ aws_endpoint_url }} iam add-user-to-group 
+        aws --endpoint-url={{ aws_endpoint_url }} iam add-user-to-group
         --user-name {{ item.name }} --group-name {{ item.group }}
       loop: "{{ desired_users }}"
       register: assign_output
       changed_when: "'LimitExceeded' not in assign_output.stderr and assign_output.rc == 0"
       failed_when: "assign_output.rc != 0 and 'LimitExceeded' not in assign_output.stderr"
+
+    - name: Show generated credentials
+      ansible.builtin.debug:
+        msg: "Usuario: {{ item.user_name }} | ID: {{ item.access_key_id }}"
+      loop: "{{ aws_keys.results }}"
