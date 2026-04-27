@@ -16,6 +16,8 @@ jobs:
         uses: ansible/ansible-lint@main
         with:
           path: "ansible/"
+        env:
+          ANSIBLE_CONFIG: "ansible/ansible.cfg"
 
   infrastructure:
     needs: linting

@@ -1,7 +1,6 @@
 - name: Config DevOps Lab
   hosts: nodes
   become: true
-
   roles:
     - webserver
 
